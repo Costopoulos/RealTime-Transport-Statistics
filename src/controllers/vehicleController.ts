@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import client from '../services/mqttService';
+import pool from '../services/dbService';
 
 export const ingestData = (req: Request, res: Response) => {
     // Define the duration of the data collection
@@ -25,4 +26,34 @@ export const ingestData = (req: Request, res: Response) => {
             });
         }, duration * 1000);
     });
+};
+
+export const getNClosestVehicles = async (req: Request, res: Response) => {
+    // Retrieve the query parameters
+    const latitude = req.query.latitude;
+    const longitude = req.query.longitude;
+    const n = parseInt(req.query.n as string) || 3;
+
+    if (latitude == undefined || longitude == undefined) {
+        return res.status(400).send('Latitude and longitude are required');
+    }
+
+    // Query the database for the n closest vehicles
+    try {
+        const query = `
+            SELECT route_number, vehicle_number, speed, latitude, longitude,
+                   ST_Distance(
+                       ST_MakePoint($1, $2)::geography, // ST_SetSRID(ST_MakePoint($1, $2), 4326) is also an option
+                       ST_MakePoint(longitude, latitude)::geography // but it is treating it as flat geometry, not taking
+                   ) as distance // into account the curvature of the Earth
+            FROM vehicles
+            ORDER BY distance
+            LIMIT $3
+        `;
+        const result = await pool.query(query, [longitude, latitude, n]);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error(`Error fetching closest vehicles: ${err.message}`);
+        res.status(500).send('Internal server error');
+    }
 };
