@@ -3,18 +3,6 @@ import pool from './dbService';
 
 // Connect to the MQTT broker
 const client = mqtt.connect('mqtts://mqtt.hsl.fi:8883'); //8883 for TLS
-const topic = '/hfp/v2/journey/ongoing/vp/#';
-
-// Subscribe to the topic
-client.on('connect', () => {
-    console.log('Connected to MQTT broker');
-    client.subscribe(topic, (err) => {
-        if (err) {
-            console.error(`Failed to subscribe to topic: ${err.message}`);
-        }
-        console.log(`Subscribed to ${topic}`);
-    });
-});
 
 // Receive the messages and ingest them to the database
 client.on('message', async (topic, message) => {
@@ -54,3 +42,5 @@ client.on('message', async (topic, message) => {
 client.on('error', (err) => {
     console.error(`Error: ${err.message}`);
 });
+
+export default client;

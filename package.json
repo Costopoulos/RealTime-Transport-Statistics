@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "ts-node-dev --respawn src/index.ts",
-    "mqtt": "ts-node-dev src/services/mqttService.ts"
+    "start": "ts-node-dev --respawn src/index.ts"
   },
   "keywords": [],
   "author": "",
