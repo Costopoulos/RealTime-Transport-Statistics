@@ -7,5 +7,5 @@ CREATE TABLE vehicles (
     latitude FLOAT,
     longitude FLOAT,
     speed FLOAT,
-    timestamp TIMESTAMP
+    timestamp TIMESTAMPTZ
 );
