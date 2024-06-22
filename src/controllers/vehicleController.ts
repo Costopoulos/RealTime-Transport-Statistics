@@ -40,15 +40,57 @@ export const getNClosestVehicles = async (req: Request, res: Response) => {
 
     // Query the database for the n closest vehicles
     try {
+        // ST_SetSRID(ST_MakePoint($1, $2), 4326) is also an option, but it is treating it as flat geometry, not taking
+        // into account the curvature of the Earth
         const query = `
             SELECT route_number, vehicle_number, speed, latitude, longitude,
                    ST_Distance(
-                       ST_MakePoint($1, $2)::geography, // ST_SetSRID(ST_MakePoint($1, $2), 4326) is also an option
-                       ST_MakePoint(longitude, latitude)::geography // but it is treating it as flat geometry, not taking
-                   ) as distance // into account the curvature of the Earth
+                       ST_MakePoint($1, $2)::geography,
+                       ST_MakePoint(longitude, latitude)::geography
+                   ) as distance
             FROM vehicles
             ORDER BY distance
-            LIMIT $3
+            LIMIT $3;
+        `;
+        const result = await pool.query(query, [longitude, latitude, n]);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error(`Error fetching closest vehicles: ${err.message}`);
+        res.status(500).send('Internal server error');
+    }
+};
+
+export const getNUniqueClosestVehicles = async (req: Request, res: Response) => {
+    // Retrieve the query parameters
+    const latitude = req.query.latitude;
+    const longitude = req.query.longitude;
+    const n = parseInt(req.query.n as string) || 3;
+
+    if (latitude == undefined || longitude == undefined) {
+        return res.status(400).send('Latitude and longitude are required');
+    }
+
+    // Query the database for the n closest vehicles
+    try {
+        // Common Table Expression (CTE) to first rank the distances and then select the closest entries.
+        const query = `
+            WITH ranked_vehicles AS (
+                SELECT route_number, vehicle_number, speed, latitude, longitude,
+                       ST_Distance(
+                           ST_MakePoint($1, $2)::geography,
+                           ST_MakePoint(longitude, latitude)::geography
+                       ) as distance,
+                       ROW_NUMBER() OVER (PARTITION BY vehicle_number ORDER BY ST_Distance(
+                           ST_MakePoint($1, $2)::geography,
+                           ST_MakePoint(longitude, latitude)::geography
+                       )) as rank
+                FROM vehicles
+            )
+            SELECT route_number, vehicle_number, speed, latitude, longitude, distance
+            FROM ranked_vehicles
+            WHERE rank = 1
+            ORDER BY distance
+            LIMIT $3;
         `;
         const result = await pool.query(query, [longitude, latitude, n]);
         res.status(200).json(result.rows);
