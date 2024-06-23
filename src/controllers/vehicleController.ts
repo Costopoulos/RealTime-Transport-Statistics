@@ -2,6 +2,11 @@ import { Request, Response } from 'express';
 import client from '../services/mqttService';
 import pool from '../services/dbService';
 
+// Define the office location and the radius to search for metro vehicles
+const OFFICE_LAT = 60.18408281913011;
+const OFFICE_LONG = 24.960090696148473;
+const RADIUS = 400; // 400 meters
+
 export const ingestData = (req: Request, res: Response) => {
     // Define the duration of the data collection
     const duration = parseFloat(req.query.duration as string) || 10; // define as string to avoid TS error because it could be ParsedQuery which is not assignable to number
@@ -41,7 +46,8 @@ export const getNClosestVehicles = async (req: Request, res: Response) => {
     // Query the database for the n closest vehicles
     try {
         // ST_SetSRID(ST_MakePoint($1, $2), 4326) is also an option, but it is treating it as flat geometry, not taking
-        // into account the curvature of the Earth
+        // into account the curvature of the Earth. With SRID 4326 the units are degrees, so the distance is in degrees.
+        // To get the distance in meters, we use the geography type.
         const query = `
             SELECT route_number, vehicle_number, speed, latitude, longitude,
                    ST_Distance(
@@ -96,6 +102,38 @@ export const getNUniqueClosestVehicles = async (req: Request, res: Response) => 
         res.status(200).json(result.rows);
     } catch (err) {
         console.error(`Error fetching closest vehicles: ${err.message}`);
+        res.status(500).send('Internal server error');
+    }
+};
+
+export const getMetroMaxSpeedsNearOffice = async (req: Request, res: Response) => {
+    try {
+        const query = `
+            WITH max_speeds AS (
+                SELECT route_number, vehicle_number, MAX(speed) AS max_speed, timestamp,
+                       ST_Distance(
+                           ST_MakePoint(longitude, latitude)::geography,
+                           ST_MakePoint($1, $2)::geography
+                       ) AS distance
+                FROM vehicles
+                WHERE route_number IN ('M1', 'M2')
+                  AND ST_DWithin(
+                        ST_MakePoint(longitude, latitude)::geography,
+                        ST_MakePoint($1, $2)::geography,
+                        $3
+                    )
+                GROUP BY route_number, vehicle_number, timestamp, latitude, longitude
+            )
+            SELECT route_number, vehicle_number, max_speed,
+                   EXTRACT(EPOCH FROM (NOW() - timestamp)) * 1000 AS milliseconds_ago,
+                   distance
+            FROM max_speeds
+            ORDER BY max_speed DESC;
+        `;
+        const result = await pool.query(query, [OFFICE_LONG, OFFICE_LAT, RADIUS]);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Error fetching metro max speeds:', err);
         res.status(500).send('Internal server error');
     }
 };
