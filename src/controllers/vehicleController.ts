@@ -17,7 +17,13 @@ const RADIUS = 400; // 400 meters
  */
 export const ingestData = (req: Request, res: Response) => {
     // Define the duration of the data collection
-    const duration = parseFloat(req.query.duration as string) || 10; // define as string to avoid TS error because it could be ParsedQuery which is not assignable to number
+    const duration = parseFloat(req.query.duration as string); // define as string to avoid TS error because it could be ParsedQuery which is not assignable to number
+
+    // Check if the duration is a valid number
+    if (isNaN(duration)) {
+        console.error('Invalid duration');
+        return res.status(400).send('Invalid duration');
+    }
 
     // Subscribe to the topic
     client.subscribe('/hfp/v2/journey/ongoing/vp/#', (err) => {

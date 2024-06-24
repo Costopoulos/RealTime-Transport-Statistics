@@ -13,6 +13,8 @@ app.use('/api/vehicles', vehicleRoutes);
 const PORT = process.env.PORT || 3000;
 
 // Starts the Express server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+export default server;
