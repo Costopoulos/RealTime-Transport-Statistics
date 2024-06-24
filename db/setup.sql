@@ -1,5 +1,3 @@
-CREATE DATABASE transport_db;
-
 CREATE TABLE vehicles (
     id SERIAL PRIMARY KEY,
     route_number VARCHAR(10),
