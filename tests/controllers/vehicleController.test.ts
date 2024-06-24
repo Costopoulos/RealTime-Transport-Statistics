@@ -65,27 +65,26 @@ describe('GET /api/vehicles/closest', () => {
                     speed: 50,
                     latitude: 60.192059,
                     longitude: 24.945831,
-                    distance: 100
+                    distance: 1.7135  // Mocking the distance value
                 }
             ]
         });
 
         const res = await request(app).get('/api/vehicles/closest').query({
             latitude: 60.192059,
-            longitude: 24.945831,
+            longitude: 24.945862,
             n: 1
         });
         expect(res.status).toBe(200);
-        expect(res.body).toEqual([
-            {
-                route_number: 'M1',
-                vehicle_number: '123',
-                speed: 50,
-                latitude: 60.192059,
-                longitude: 24.945831,
-                distance: 100
-            }
-        ]);
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0]).toEqual(expect.objectContaining({
+            route_number: 'M1',
+            vehicle_number: '123',
+            speed: 50,
+            latitude: 60.192059,
+            longitude: 24.945831,
+        }));
+        expect(res.body[0].distance).toBeCloseTo(1.7135, 4);
     });
 });
 
@@ -107,6 +106,22 @@ describe('GET /api/vehicles/average-speed', () => {
     });
 });
 
+// Get Metro Max Speeds Near Office Test
+describe('GET /api/vehicles/metro-max-speeds', () => {
+    it('should return max speeds near office', async () => {
+        (pool.query as jest.Mock).mockResolvedValue({
+            rows: [
+                {route_number: 'M1', vehicle_number: '123', max_speed: 80, milliseconds_ago: 10000, distance: 50}
+            ]
+        });
+
+        const res = await request(app).get('/api/vehicles/metro-max-speeds');
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual([
+            {route_number: 'M1', vehicle_number: '123', max_speed: 80, milliseconds_ago: 10000, distance: 50}
+        ]);
+    });
+});
 
 // Clean up mocks after tests
 afterAll(() => {
