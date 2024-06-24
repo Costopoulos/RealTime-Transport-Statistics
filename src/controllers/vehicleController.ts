@@ -7,6 +7,14 @@ const OFFICE_LAT = 60.18408281913011;
 const OFFICE_LONG = 24.960090696148473;
 const RADIUS = 400; // 400 meters
 
+
+
+/**
+ * Ingest vehicle data from the MQTT broker to the database for a specified duration.
+ *
+ * @param {Request} req - The Express Request object
+ * @param {Response} res - The Express Response object
+ */
 export const ingestData = (req: Request, res: Response) => {
     // Define the duration of the data collection
     const duration = parseFloat(req.query.duration as string) || 10; // define as string to avoid TS error because it could be ParsedQuery which is not assignable to number
@@ -33,6 +41,13 @@ export const ingestData = (req: Request, res: Response) => {
     });
 };
 
+
+/**
+ * Retrieves the n closest vehicles to a specified location.
+ *
+ * @param {Request} req - The Express Request object
+ * @param {Response} res - The Express Response object
+ */
 export const getNClosestVehicles = async (req: Request, res: Response) => {
     // Retrieve the query parameters
     const latitude = req.query.latitude;
@@ -66,6 +81,13 @@ export const getNClosestVehicles = async (req: Request, res: Response) => {
     }
 };
 
+
+/**
+ * Retrieves the n unique closest vehicles to a specified location.
+ *
+ * @param {Request} req - The Express Request object
+ * @param {Response} res - The Express Response object
+ */
 export const getNUniqueClosestVehicles = async (req: Request, res: Response) => {
     // Retrieve the query parameters
     const latitude = req.query.latitude;
@@ -106,9 +128,16 @@ export const getNUniqueClosestVehicles = async (req: Request, res: Response) => 
     }
 };
 
-// Get the average speed of vehicles for each route. The average speed is normally calculated as the average of all
-// the speeds of the vehicles on that route, but this endpoint's response time is not affected by the number of vehicles,
-// aka the total amount of ingested data.
+
+/**
+ * Retrieve the average speed of vehicles for each route.
+ *
+ * The average speed is normally calculated as the average of all the speeds of the vehicles on that route, but this
+ * endpoint's response time is not affected by the number of vehicles, aka the total amount of ingested data.
+ *
+ * @param {Request} req - The Express Request object
+ * @param {Response} res - The Express Response object
+ */
 export const getAverageSpeedPerRoute = async (req: Request, res: Response) => {
     try {
         const query = `
@@ -123,7 +152,13 @@ export const getAverageSpeedPerRoute = async (req: Request, res: Response) => {
     }
 }
 
-// Get the maximum speeds of metro vehicles while near the office, as well as the time that max speed was recorded
+
+/**
+ * Retrieves the maximum speeds of metro vehicles while near the office and the time since those speeds were achieved.
+ *
+ * @param {Request} req - The Express request object.
+ * @param {Response} res - The Express response object.
+ */
 export const getMetroMaxSpeedsNearOffice = async (req: Request, res: Response) => {
     try {
         const query = `

@@ -3,6 +3,7 @@ import { ingestData, getNClosestVehicles, getNUniqueClosestVehicles, getAverageS
 
 const router = Router();
 
+// Define the routes for the vehicle data
 router.post("/ingest", ingestData);
 router.get("/closest", getNClosestVehicles);
 router.get("/unique-closest", getNUniqueClosestVehicles);
