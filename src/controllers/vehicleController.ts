@@ -106,6 +106,24 @@ export const getNUniqueClosestVehicles = async (req: Request, res: Response) => 
     }
 };
 
+// Get the average speed of vehicles for each route. The average speed is normally calculated as the average of all
+// the speeds of the vehicles on that route, but this endpoint's response time is not affected by the number of vehicles,
+// aka the total amount of ingested data.
+export const getAverageSpeedPerRoute = async (req: Request, res: Response) => {
+    try {
+        const query = `
+            SELECT route_number, average_speed
+            FROM route_speed_summary;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error(`Error fetching average speeds: ${err.message}`);
+        res.status(500).send('Internal server error');
+    }
+}
+
+// Get the maximum speeds of metro vehicles while near the office, as well as the time that max speed was recorded
 export const getMetroMaxSpeedsNearOffice = async (req: Request, res: Response) => {
     try {
         const query = `
